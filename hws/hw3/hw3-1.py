@@ -1,125 +1,42 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from scipy.stats import invgamma, norm
-from tqdm import tqdm
 #%matplotlib inline
 
-logistic_data = np.load('mcs_hw2_p3_data.npy')
-n = len(logistic_data)
-X = logistic_data[:,0:2]
-y = logistic_data[:,2].reshape(n,1)
+x = np.array([1.41, 1.84, 1.64, 0.85, 1.32, 1.97, 1.70, 1.02, 1.84, 0.92], dtype=float)
+r = np.array([0.94, 0.70, 0.16, 0.38, 0.40, 0.57, 0.24, 0.27, 0.60, 0.81], dtype=float)
+y = np.array([13, 17, 6, 3, 7, 13, 8, 7, 5, 8], dtype=int)
 
+theta_0 = 1
+epsilon = 1e-5
+err = 1 + epsilon
+theta_list = [theta_0]
 
-def U(beta, X=X, y=y):
-    """
-    calculate the potential energy U(beta)
-    """
-    U = -np.dot(np.dot(beta.T, X.T), (y - np.ones((n,1)))) + np.dot(np.ones((1,n)), np.log(1 + np.exp(-np.dot(X, beta)))) + 0.5 * np.dot(beta.T, beta)
+while err >= epsilon:
+    theta = (theta_0 / np.sum(x)) * (np.dot(x / (x * theta_0 + r), y))
+    err = np.abs(theta - theta_0)
+    theta_list.append(theta)
+    theta_0 = theta
 
-    return U
-
-
-def K(r):
-    """
-    calculate the kinetic energy K(r)
-    """
-    K = 0.5 * np.dot(r.T, r)
-
-    return K
-
-
-def nabla_U(beta, X=X, y=y):
-    """
-    calculate the gradient of the potential energy U(beta)
-    """
-    nabla_U = -np.dot(X.T, y - np.ones((n,1)) + np.exp(-np.dot(X, beta)) / (1 + np.exp(-np.dot(X, beta)))) + beta
-
-    return nabla_U
-
-
-def nabla_K(r):
-    """
-    calculate the gradient of the kinetic energy K(r)
-    """
-    return r
-
-
-def H(beta, r, X=X, y=y):
-    """
-    calculate the Hamiltonian
-    """
-    return U(beta, X=X, y=y) + K(r)
-
-
-def accept_p(beta_new, r_new, beta_init, r_init, X=X, y=y):
-    """
-    calculate the acceptance probability
-    """
-    a = min(1, np.exp(-H(beta_new, r_new, X=X, y=y) + H(beta_init, r_init, X=X, y=y)))
-
-    return a
-
-
-def leap_frog(beta, r, epsilon, X=X, y=y):
-    """
-    perform one step of leap-frog algorithm
-    """
-    r_m = r - 0.5 * epsilon * nabla_U(beta, X=X, y=y)
-    beta_new = beta + epsilon * nabla_K(r_m)
-    r_new = r_m - 0.5 * epsilon * nabla_U(beta_new, X=X, y=y)
-
-    return beta_new, r_new
-
-
-def HMC(L, sample_num, burn_in_num, epsilon, beta_0=np.zeros((2,1)), rand_steps=False, X=X, y=y):
-    """
-    implement Hamiltonian Monte Carlo algorithm\n
-    if rand_steps is set to False (default), use a fixed L=L; otherwise use a random L ~ Uniform(1,L)
-    """
-    beta = beta_0
-    beta_list = beta.copy()
-    sample_collected = 0
-
-    with tqdm(total = sample_num + burn_in_num) as pbar:
-        while sample_collected < sample_num + burn_in_num:
-            beta_init = beta.copy()
-            r = np.random.multivariate_normal(mean=np.array([0,0]), cov=np.eye(2)).reshape(2,1)
-            r_init = r.copy()
-
-            if rand_steps == False:
-                L = L
-            elif rand_steps == True:
-                L = np.random.randint(low=1, high=L+1)
-
-            for step in range(L):
-                beta, r = leap_frog(beta, r, epsilon=epsilon, X=X, y=y)
-
-            u = np.random.rand()
-            if u < accept_p(beta_new=beta, r_new=r, beta_init=beta_init, r_init=r_init, X=X, y=y):
-                sample_collected += 1
-                pbar.update(1)
-                if sample_collected > burn_in_num:
-                    beta_list = np.concatenate((beta_list, beta.copy()), axis=1)
-            else:
-                beta = beta_init.copy()
-                r = r_init.copy()
-
-    return beta_list
-
-
-# initialize and run the HMC sampler
-beta_list = HMC(L=10, sample_num=500, burn_in_num=500, epsilon=0.01, rand_steps=False)
-
-
-# plot scatter
+# plot
 fig, ax = plt.subplots()
 plt.rcParams.update({
     "text.usetex": True
 })
-ax.scatter(beta_list[0][1:], beta_list[1][1:], s=10)
+ax.plot(np.arange(0, len(theta_list)), np.array(theta_list))
 
 fig.set_size_inches(8,6)
-plt.xlabel('$\\beta_i$')
-plt.ylabel('$\\beta_j$')
-plt.savefig('2-4-1.jpg',dpi=1000, bbox_inches='tight')
+plt.xlabel('$\\rm iter$')
+plt.ylabel('$\\theta$')
+plt.savefig('3-1-1.jpg',dpi=1000, bbox_inches='tight')
 plt.show()
+
+print(f'the MLE of theta is {theta}')
+
+I_obs = np.dot(np.square(x / (theta * x + r)), y)
+print(f'the observed Fisher information is {I_obs}')
+
+I_com = np.dot(x / theta, y / (x * theta + r))
+print(f'the complete information is {I_com}')
+
+frac = 1 - I_obs / I_com
+print(f'the fraction of missing information is {frac}')
