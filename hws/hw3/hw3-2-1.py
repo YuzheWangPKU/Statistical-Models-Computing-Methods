@@ -7,7 +7,7 @@ observed_data = np.load('absolute_gaussian_data.npy')
 
 def EM_algorithm(y=observed_data, mu_0=0, sigma2_0=1, epsilon=1e-5):
     """
-    implementation of EM algorithm
+    implement EM algorithm
     """
     mu_list, sigma2_list = [mu_0], [sigma2_0]
     m = len(y)
