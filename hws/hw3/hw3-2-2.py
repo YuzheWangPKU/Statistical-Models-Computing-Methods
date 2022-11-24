@@ -12,7 +12,7 @@ def cal_l(y, mu, sigma2, gamma):
     """
     m = len(y)
 
-    Q = -(((np.dot(y, y) + m*(mu**2) -2*mu*np.dot(2*gamma-1, y)) / (2*sigma2)) + m*np.log(2*np.pi*sigma2))
+    Q = -(((np.dot(y, y) + m*(mu**2) -2*mu*np.dot(2*gamma-1, y)) / (2*sigma2)) + 0.5*m*np.log(2*np.pi*sigma2))
     H = np.dot(gamma, np.log(gamma)) + np.dot(1-gamma, np.log(1-gamma))
     l = Q - H
 
@@ -29,7 +29,7 @@ def EM_algorithm(y=observed_data, mu_0=1, sigma2_0=1, iter=20):
     for i in range(iter):
         gamma = 1 / (1 + (np.exp(-np.square(y+mu_0)/(2*sigma2_0))) / (np.exp(-np.square(y-mu_0)/(2*sigma2_0))))
         mu = np.dot(2*gamma-1, y) / m
-        sigma2 = (np.dot(y, y) + m*(mu**2) - 2*mu*np.dot(2*gamma-1, y)) / (2*m)
+        sigma2 = (np.dot(y, y) + m*(mu**2) - 2*mu*np.dot(2*gamma-1, y)) / m
 
         l = cal_l(y=y, mu=mu, sigma2=sigma2, gamma=gamma)
         l_list.append(l)
@@ -50,7 +50,7 @@ def gradient_descent(y=observed_data, mu_0=1, sigma2_0=1, iter=20, eta=0.1):
     for i in range(iter):
         gamma = 1 / (1 + (np.exp(-np.square(y+mu_0)/(2*sigma2_0))) / (np.exp(-np.square(y-mu_0)/(2*sigma2_0))))
         mu_gradient = -(m*mu_0 - np.dot(2*gamma-1, y)) / (sigma2_0)
-        sigma2_gradient = ((np.dot(y, y) + m*(mu_0**2) -2*mu_0*np.dot(2*gamma-1, y)) / (2*sigma2_0**2)) - (m / sigma2_0)
+        sigma2_gradient = ((np.dot(y, y) + m*(mu_0**2) -2*mu_0*np.dot(2*gamma-1, y)) / (2*sigma2_0**2)) - (m / (2*sigma2_0))
 
         mu = mu_0 + eta * mu_gradient
         sigma2 = sigma2_0 + eta * sigma2_gradient
