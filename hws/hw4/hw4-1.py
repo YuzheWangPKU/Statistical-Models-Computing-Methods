@@ -11,6 +11,7 @@ data = data_loaded['data']
 beta_matrix = data_loaded['beta_matrix']
 
 
+
 def VI_LDA(i, D_mat=data, B_mat=beta_matrix, alpha=0.1, epsilon=1e-3):
     """
     implement variational inference algorithm on human ancestry discovery i.e. LDA model for a single individual
